@@ -39,22 +39,24 @@ int pop_from_tree(int c)
       if(flag == true)
       {
       	int h = c;
-      	auto write_tvar = stm::writeTVar(global_tree, t.inserted(h));
+      	auto write_tvar = stm::writeTVar(global_tree, deleted(h,t));
       	auto f_return_h = [h](stm::Unit)
         {
           return stm::pure(h);
         };
         return stm::bind<stm::Unit, int>(write_tvar, f_return_h);
-      }    
+      } 
+      else
+        return stm::pure(-1);		
     }
   };
   auto pop_transaction = stm::withTVar<RBTree<int>, int>(global_tree, f_pop_from_tree);
   return stm::atomically(cxt, pop_transaction);
 }
 
-void fill_tree()
+void fill_tree(int start)
 {
-  for(int i = 0; i < NUM_ELEMENTS; i++)
+  for(int i = start - 1; i < NUM_ELEMENTS; i += 3)
   {
     insert_to_tree(i);
   }
@@ -64,7 +66,9 @@ void read_from_tree(int* acc)
 {
   for(int i = 0; i < NUM_ELEMENTS; i++)
   {
-    *acc += pop_from_tree(i);
+	int tmp = pop_from_tree(i);
+	if(tmp != -1)
+		*acc += pop_from_tree(i);
   }
 }
 
@@ -75,9 +79,9 @@ int main()
     int acc3 = 0;
 
     global_tree = stm::newTVarIO<RBTree<int>>(cxt, RBTree<int>());
-    std::thread fl1(fill_tree);
-    std::thread fl2(fill_tree);
-    std::thread fl3(fill_tree);
+    std::thread fl1(fill_tree, 1);
+    std::thread fl2(fill_tree, 2);
+    std::thread fl3(fill_tree, 3);
     std::thread rd1(read_from_tree, &acc1);
     std::thread rd2(read_from_tree, &acc2);
     std::thread rd3(read_from_tree, &acc3);

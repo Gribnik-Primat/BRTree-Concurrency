@@ -84,6 +84,14 @@ public:
         else
             return true;
     }
+    bool ismember(T x) const
+	{
+	  T y = root();
+	  if(x == y)
+		return true;
+	  else 
+		return false;
+	}
     RBTree inserted(T x) const
     {
         RBTree t = ins(x);
@@ -143,6 +151,7 @@ private:
                 return *this; // no duplicates
         }
     }
+	
     // Called only when parent is black
     static RBTree balance(RBTree const & lft, T x, RBTree const & rgt)
     {
@@ -222,7 +231,18 @@ RBTree<T> treeUnion(RBTree<T> const & a, RBTree<T> const & b)
     });
     return res;
 }
-
+template<class T>
+RBTree<T> deleted(T const & a, RBTree<T> & t)
+{
+    // a u b = a + (b \ a)
+    RBTree<T> res;
+    RBTree<T> tree = t;
+    forEach(tree, [&res,&a](T const & v){
+        if (v != a)
+            res.inserted(v);
+    });
+    return res;
+}
 // Remove elements in set from a list
 template<class T>
 List<T> rem_from_list(List<T> const & lst, RBTree<T> const & set)
