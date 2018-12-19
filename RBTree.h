@@ -124,7 +124,33 @@ public:
         assert(lft == rgt);
         return (rootColor() == B)? 1 + lft: lft;
     }
+    static RBTree balance(RBTree const & lft, T x, RBTree const & rgt)
+    {
+        if (lft.doubledLeft())
+            return RBTree(R
+                        , lft.left().paint(B)
+                        , lft.root()
+                        , RBTree(B, lft.right(), x, rgt));
+        else if (lft.doubledRight())
+            return RBTree(R
+                        , RBTree(B, lft.left(), lft.root(), lft.right().left())
+                        , lft.right().root()
+                        , RBTree(B, lft.right().right(), x, rgt));
+        else if (rgt.doubledLeft())
+            return RBTree(R
+                        , RBTree(B, lft, x, rgt.left().left())
+                        , rgt.left().root()
+                        , RBTree(B, rgt.left().right(), rgt.root(), rgt.right()));
+        else if (rgt.doubledRight())
+            return RBTree(R
+                        , RBTree(B, lft, x, rgt.left())
+                        , rgt.root()
+                        , rgt.right().paint(B));
+        else
+            return RBTree(B, lft, x, rgt);
+    }
 private:
+ 
     RBTree ins(T x) const
     {
         assert1();
@@ -153,31 +179,7 @@ private:
     }
 	
     // Called only when parent is black
-    static RBTree balance(RBTree const & lft, T x, RBTree const & rgt)
-    {
-        if (lft.doubledLeft())
-            return RBTree(R
-                        , lft.left().paint(B)
-                        , lft.root()
-                        , RBTree(B, lft.right(), x, rgt));
-        else if (lft.doubledRight())
-            return RBTree(R
-                        , RBTree(B, lft.left(), lft.root(), lft.right().left())
-                        , lft.right().root()
-                        , RBTree(B, lft.right().right(), x, rgt));
-        else if (rgt.doubledLeft())
-            return RBTree(R
-                        , RBTree(B, lft, x, rgt.left().left())
-                        , rgt.left().root()
-                        , RBTree(B, rgt.left().right(), rgt.root(), rgt.right()));
-        else if (rgt.doubledRight())
-            return RBTree(R
-                        , RBTree(B, lft, x, rgt.left())
-                        , rgt.root()
-                        , rgt.right().paint(B));
-        else
-            return RBTree(B, lft, x, rgt);
-    }
+    
     bool doubledLeft() const 
     {
         return !isEmpty()
@@ -232,16 +234,92 @@ RBTree<T> treeUnion(RBTree<T> const & a, RBTree<T> const & b)
     return res;
 }
 template<class T>
+RBTree<T> findparent(T const & child, RBTree<T> & t)
+{
+    RBTree<T> parent_main;
+    RBTree<T> parent = t;
+    forEach(t, [&child,&parent,&parent_main](T const & v){
+	if(!parent.isEmpty())
+	{
+		if (!parent.right().isEmpty() && parent.root() > v){
+		   parent = parent.right();
+  		   return;
+		}
+		if (!parent.left().isEmpty() && parent.root() < v){
+		   parent = parent.left();
+		   return;	
+		}      
+		if ((!parent.left().isEmpty() && parent.left().root() == v )
+		    || (!parent.right().isEmpty() && parent.right().root() == v))
+		{
+		  parent_main = parent;
+		  return;
+		}
+	}
+    });
+    return parent_main;
+}
+template<class T>
 RBTree<T> deleted(T const & a, RBTree<T> & t)
 {
-    // a u b = a + (b \ a)
-    RBTree<T> res;
     RBTree<T> tree = t;
-    forEach(tree, [&res,&a](T const & v){
-        if (v != a)
-            res.inserted(v);
-    });
-    return res;
+    if(!t.isEmpty() && t.root() == a) // if a in root of main tree
+    {
+       if(t.left().isEmpty() && t.right().isEmpty())
+          return t;
+       else{
+	       if(!t.left().isEmpty()){
+		  t = t.left();
+		  t.balance(t.left(),t.root(),t.right());
+		  return t;		
+		}
+	       if(!t.right().isEmpty()){
+		  t = t.right();
+		  t.balance(t.left(),t.root(),t.right());
+		  return t;		
+		}
+        }
+    }
+    RBTree<T> parent_a;
+    parent_a = findparent(a,tree);
+    //TODO: SOLVE BUG FOR .left and .right
+    if(!parent_a.left().isEmpty() && parent_a.left().root() == a) 
+    {
+        if(!parent_a.left().left().isEmpty())
+	{
+            parent_a.left() = parent_a.left().left();	
+	    parent_a.left() = parent_a.left().balance(parent_a.left().left(),parent_a.left().root(),parent_a.left().right());	
+	    return tree;		
+	}
+        else
+	{  
+	    if(!parent_a.left().right().isEmpty())
+	    {
+	       parent_a.left() = parent_a.left().right();
+                 parent_a.left() = parent_a.left().balance(parent_a.left().left(),parent_a.left().root(),parent_a.left().right());
+               return tree;
+	    }
+	}
+    }
+    if(!parent_a.right().isEmpty() && parent_a.right().root() == a)
+    {  	
+	if(!parent_a.right().right().isEmpty())
+	{
+            parent_a.right() = parent_a.right().right();
+            parent_a.right() = parent_a.right().balance(parent_a.right().left(),parent_a.left().root(),parent_a.right().right());
+	    return tree;	
+	}		
+	else
+        {  
+	   if(!parent_a.right().left().isEmpty())
+	   {
+	     parent_a.right() = parent_a.right().left();
+	      parent_a.right() = parent_a.right().balance(parent_a.right().left(),parent_a.left().root(),parent_a.right().right());
+	     return tree;				
+	   }	
+	}
+    }
+    return tree;
 }
 // Remove elements in set from a list
 template<class T>
