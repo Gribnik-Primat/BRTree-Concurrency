@@ -16,7 +16,6 @@ stm::Context cxt;
 stm::TVar<List<int>> global_list;
 stm::TVar<RBTree<int>> global_tree;
 
-
 void insert_to_tree(int c)
 {
   auto f_insert_to_tree = [&](RBTree<int> t)
@@ -31,24 +30,22 @@ int pop_from_tree(int c)
 {
   auto f_pop_from_tree = [&](RBTree<int> t)
   {
-    if(t.isEmpty())
-      return stm::retry<int>();
-    else
-    {
-      bool flag = t.member(c);
-      if(flag == true)
-      {
-      	int h = c;
-      	auto write_tvar = stm::writeTVar(global_tree, deleted(h,t));
-      	auto f_return_h = [h](stm::Unit)
-        {
-          return stm::pure(h);
-        };
-        return stm::bind<stm::Unit, int>(write_tvar, f_return_h);
-      } 
-      else
-        return stm::pure(-1);		
-    }
+     bool flag = t.member(c);
+     if(flag == true)
+	{
+	  int h = c;
+          auto write_tvar = stm::writeTVar(global_tree, deleted(h,t));
+	  auto f_return_h = [h](stm::Unit)
+	  {
+	    return stm::pure(h);
+	  };
+	return stm::bind<stm::Unit, int>(write_tvar, f_return_h);
+     } 
+     else 
+     {
+	  return stm::pure(-1);
+     }
+
   };
   auto pop_transaction = stm::withTVar<RBTree<int>, int>(global_tree, f_pop_from_tree);
   return stm::atomically(cxt, pop_transaction);
@@ -58,17 +55,18 @@ void fill_tree(int start)
 {
   for(int i = start - 1; i < NUM_ELEMENTS; i += 3)
   {
+    std::cout << "writing " << i <<std::endl;
     insert_to_tree(i);
   }
 }
-
 void read_from_tree(int* acc)
 {
   for(int i = 0; i < NUM_ELEMENTS; i++)
   {
+	std::cout << "reading  " << i << std::endl;
 	int tmp = pop_from_tree(i);
 	if(tmp != -1)
-		*acc += pop_from_tree(i);
+		*acc += tmp;
   }
 }
 
