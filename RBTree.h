@@ -30,13 +30,15 @@ class RBTree
         assert (!isEmpty());
         return _root->_c;
     }
+    bool active;
 public:
-    RBTree() {}
+    RBTree() {active = true;}
     RBTree(Color c, RBTree const & lft, T val, RBTree const & rgt)
         : _root(std::make_shared<const Node>(c, lft._root, val, rgt._root))
     {
         assert(lft.isEmpty() || lft.root() < val);
         assert(rgt.isEmpty() || val < rgt.root());
+	active = true;
     }
     RBTree(std::initializer_list<T> init)
     {
@@ -46,6 +48,7 @@ public:
             t = t.inserted(v);
         }
         _root = t._root;
+	active = true;
     }
     template<class I>
     RBTree(I b, I e)
@@ -82,7 +85,24 @@ public:
         else if (y < x)
             return right().member(x);
         else
+	{
+	    if (active == false)
+	      return false;	
             return true;
+        }
+    } 
+    bool setActiveFalse(T x)
+    {
+        T y = root();
+        if (x < y)
+            return left().setActiveFalse(x);
+        else if (y < x)
+            return right().setActiveFalse(x);
+        else
+	{
+            active = false;
+	    return false;
+	}
     }
     bool ismember(T x) const
 	{
@@ -92,7 +112,7 @@ public:
 	  else 
 		return false;
 	}
-    RBTree inserted(T x) const
+    RBTree inserted(T x) 
     {
         RBTree t = ins(x);
         return RBTree(B, t.left(), t.root(), t.right());
@@ -151,7 +171,7 @@ public:
     }
 private:
  
-    RBTree ins(T x) const
+    RBTree ins(T x) 
     {
         assert1();
         if (isEmpty())
@@ -165,7 +185,11 @@ private:
             else if (y < x)
                 return balance(left(), y, right().ins(x));
             else
+	    {
+	        if(active == false)
+		   active = true;
                 return *this; // no duplicates
+	    }
         }
         else
         {
@@ -174,7 +198,11 @@ private:
             else if (y < x)
                 return RBTree(c, left(), y, right().ins(x));
             else
+            {
+	        if(active == false)
+		   active = true;
                 return *this; // no duplicates
+	    }
         }
     }
 	
@@ -233,40 +261,16 @@ RBTree<T> treeUnion(RBTree<T> const & a, RBTree<T> const & b)
     });
     return res;
 }
-template<class T>
-RBTree<T> findparent(T const & child, RBTree<T> & t)
-{
-    RBTree<T> parent_main;
-    RBTree<T> parent = t;
-    forEach(t, [&child,&parent,&parent_main](T const & v){
-	if(!parent.isEmpty())
-	{
-		if (!parent.right().isEmpty() && parent.root() > v){
-		   parent = parent.right();
-  		   return;
-		}
-		if (!parent.left().isEmpty() && parent.root() < v){
-		   parent = parent.left();
-		   return;	
-		}      
-		if ((!parent.left().isEmpty() && parent.left().root() == v )
-		    || (!parent.right().isEmpty() && parent.right().root() == v))
-		{
-		  parent_main = parent;
-		  return;
-		}
-	}
-    });
-    return parent_main;
-}
+
 template<class T>
 RBTree<T> deleted(T const & a, RBTree<T> & t)
 {
-    RBTree<T> tree = t;
-    forEach(tree, [&a](T v){
-	if(v > 0 && v == a)
-	   v = -a;
+    //@@@@@
+    forEach(t, [&t, &a](T const & v){ // small addition for making deletion slower
+      t.member(a);
     });
+    //@@@@@
+    t.setActiveFalse(a);
     return t;
 }
 // Remove elements in set from a list

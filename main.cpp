@@ -80,6 +80,15 @@ int main()
     std::thread fl1(fill_tree, 1);
     std::thread fl2(fill_tree, 2);
     std::thread fl3(fill_tree, 3);
+    /*std::thread fl4(fill_tree, 4);
+    std::thread fl5(fill_tree, 5);
+    std::thread fl6(fill_tree, 6);
+    std::thread fl7(fill_tree, 7);
+    std::thread fl8(fill_tree, 8);
+    std::thread fl9(fill_tree, 9);
+    std::thread fl10(fill_tree, 10);
+    std::thread fl11(fill_tree, 11);
+    std::thread fl12(fill_tree, 12);*/
     std::thread rd1(read_from_tree, &acc1);
     std::thread rd2(read_from_tree, &acc2);
     std::thread rd3(read_from_tree, &acc3);
@@ -88,6 +97,16 @@ int main()
     fl1.join();
     fl2.join();
     fl3.join();
+    /*fl4.join();
+    fl5.join();
+    fl6.join();
+    fl7.join();
+    fl8.join();
+    fl9.join();
+    fl10.join();
+    fl11.join();
+    fl12.join();*/
+
     rd1.join();
     rd2.join();
     rd3.join();
