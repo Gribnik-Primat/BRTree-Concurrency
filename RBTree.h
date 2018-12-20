@@ -263,63 +263,11 @@ template<class T>
 RBTree<T> deleted(T const & a, RBTree<T> & t)
 {
     RBTree<T> tree = t;
-    if(!t.isEmpty() && t.root() == a) // if a in root of main tree
-    {
-       if(t.left().isEmpty() && t.right().isEmpty())
-          return t;
-       else{
-	       if(!t.left().isEmpty()){
-		  t = t.left();
-		  t.balance(t.left(),t.root(),t.right());
-		  return t;		
-		}
-	       if(!t.right().isEmpty()){
-		  t = t.right();
-		  t.balance(t.left(),t.root(),t.right());
-		  return t;		
-		}
-        }
-    }
-    RBTree<T> parent_a;
-    parent_a = findparent(a,tree);
-    //TODO: SOLVE BUG FOR .left and .right
-    if(!parent_a.left().isEmpty() && parent_a.left().root() == a) 
-    {
-        if(!parent_a.left().left().isEmpty())
-	{
-            parent_a.left() = parent_a.left().left();	
-	    parent_a.left() = parent_a.left().balance(parent_a.left().left(),parent_a.left().root(),parent_a.left().right());	
-	    return tree;		
-	}
-        else
-	{  
-	    if(!parent_a.left().right().isEmpty())
-	    {
-	       parent_a.left() = parent_a.left().right();
-                 parent_a.left() = parent_a.left().balance(parent_a.left().left(),parent_a.left().root(),parent_a.left().right());
-               return tree;
-	    }
-	}
-    }
-    if(!parent_a.right().isEmpty() && parent_a.right().root() == a)
-    {  	
-	if(!parent_a.right().right().isEmpty())
-	{
-            parent_a.right() = parent_a.right().right();
-            parent_a.right() = parent_a.right().balance(parent_a.right().left(),parent_a.left().root(),parent_a.right().right());
-	    return tree;	
-	}		
-	else
-        {  
-	   if(!parent_a.right().left().isEmpty())
-	   {
-	     parent_a.right() = parent_a.right().left();
-	      parent_a.right() = parent_a.right().balance(parent_a.right().left(),parent_a.left().root(),parent_a.right().right());
-	     return tree;				
-	   }	
-	}
-    }
-    return tree;
+    forEach(tree, [&a](T v){
+	if(v > 0 && v == a)
+	   v = -a;
+    });
+    return t;
 }
 // Remove elements in set from a list
 template<class T>
