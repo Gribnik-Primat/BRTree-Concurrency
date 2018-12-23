@@ -14,36 +14,31 @@ class RBTree
     struct Node
     {
         Node(Color c, 
-            std::shared_ptr<Node> const & lft, 
+            std::shared_ptr<const Node> const & lft, 
             T val, 
-            std::shared_ptr<Node> const & rgt,
-	    bool act)
-            : _c(c), _lft(lft), _val(val), _rgt(rgt),active(act)
+            std::shared_ptr<const Node> const & rgt)
+            : _c(c), _lft(lft), _val(val), _rgt(rgt)
         {}
-        Color _c;	
-        std::shared_ptr<Node> _lft;
+        Color _c;
+        std::shared_ptr<const Node> _lft;
         T _val;
-        std::shared_ptr<Node> _rgt;
-        bool active;
-	void setactiveinnode(bool b)
-        {
-	  active = b;
-        }
+        std::shared_ptr<const Node> _rgt;
     };
-    explicit RBTree(std::shared_ptr<Node> const & node) : _root(node) {} 
+    explicit RBTree(std::shared_ptr<const Node> const & node) : _root(node) {} 
     Color rootColor() const
     {
         assert (!isEmpty());
         return _root->_c;
     }
-
+    bool active;
 public:
-    RBTree() {}
-    RBTree(Color c, RBTree const & lft, T val, RBTree const & rgt,bool act)
-        : _root(std::make_shared<Node>(c, lft._root, val, rgt._root,act))
+    RBTree() {active = true;}
+    RBTree(Color c, RBTree const & lft, T val, RBTree const & rgt)
+        : _root(std::make_shared<const Node>(c, lft._root, val, rgt._root))
     {
         assert(lft.isEmpty() || lft.root() < val);
         assert(rgt.isEmpty() || val < rgt.root());
+	active = true;
     }
     RBTree(std::initializer_list<T> init)
     {
@@ -53,6 +48,7 @@ public:
             t = t.inserted(v);
         }
         _root = t._root;
+	active = true;
     }
     template<class I>
     RBTree(I b, I e)
@@ -69,16 +65,6 @@ public:
         assert(!isEmpty());
         return _root->_val;
     }
-    void setactive(bool b)
-    {
-       assert(!isEmpty());
-       _root.get()->setactiveinnode(b);
-    }
-    RBTree getroot() const
-    { 
-	assert(!isEmpty());
-        return RBTree(_root);
-    }
     RBTree left() const
     {
         assert(!isEmpty());
@@ -88,11 +74,6 @@ public:
     {
         assert(!isEmpty());
         return RBTree(_root->_rgt);
-    }
-    bool getactive() const
-    {
-        assert(!isEmpty());
-        return _root->active;
     }
     bool member(T x) const
     {
@@ -105,7 +86,7 @@ public:
             return right().member(x);
         else
 	{
-	    if (getactive() == false)
+	    if (active == false)
 	      return false;	
             return true;
         }
@@ -119,7 +100,7 @@ public:
             return right().setActiveFalse(x);
         else
 	{
-            setactive(false);
+            active = false;
 	    return false;
 	}
     }
@@ -134,43 +115,7 @@ public:
     RBTree inserted(T x) 
     {
         RBTree t = ins(x);
-        return RBTree(B, t.left(), t.root(), t.right(),true);
-    }
-    RBTree ins(T x) 
-    {
-        assert1();
-        if (isEmpty())
-            return RBTree(R, RBTree(), x, RBTree(), true);
-        T y = root();
-        Color c = rootColor();
-        if (rootColor() == B)
-        {
-            if (x < y)
-                return balance(left().ins(x), y, right());
-            else if (y < x)
-                return balance(left(), y, right().ins(x));
-            else
-	    {
- 		if(getactive() == false){
-		  setactive(true);
-	        }
-                return *this; // no duplicates
-	    }
-        }
-        else
-        {
-            if (x < y)
-                return RBTree(c, left().ins(x), y, right(),true);
-            else if (y < x)
-                return RBTree(c, left(), y, right().ins(x),true);
-            else
-            {
-	        if(getactive() == false){
-		   setactive(true);
-  		}
-                return *this; // no duplicates
-	    }
-        }
+        return RBTree(B, t.left(), t.root(), t.right());
     }
     // 1. No red node has a red child.
     void assert1() const
@@ -205,28 +150,61 @@ public:
             return RBTree(R
                         , lft.left().paint(B)
                         , lft.root()
-                        , RBTree(B, lft.right(), x, rgt,true),lft.getactive());
+                        , RBTree(B, lft.right(), x, rgt));
         else if (lft.doubledRight())
             return RBTree(R
-                        , RBTree(B, lft.left(), lft.root(), lft.right().left(),lft.getactive())
+                        , RBTree(B, lft.left(), lft.root(), lft.right().left())
                         , lft.right().root()
-                        , RBTree(B, lft.right().right(), x, rgt,true),true);
+                        , RBTree(B, lft.right().right(), x, rgt));
         else if (rgt.doubledLeft())
             return RBTree(R
-                        , RBTree(B, lft, x, rgt.left().left(),true)
+                        , RBTree(B, lft, x, rgt.left().left())
                         , rgt.left().root()
-                        , RBTree(B, rgt.left().right(), rgt.root(), rgt.right(),rgt.getactive()),rgt.left().getactive());
+                        , RBTree(B, rgt.left().right(), rgt.root(), rgt.right()));
         else if (rgt.doubledRight())
             return RBTree(R
-                        , RBTree(B, lft, x, rgt.left(),true)
+                        , RBTree(B, lft, x, rgt.left())
                         , rgt.root()
-                        , rgt.right().paint(B),rgt.getactive());
+                        , rgt.right().paint(B));
         else
-            return RBTree(B, lft, x, rgt,true);
+            return RBTree(B, lft, x, rgt);
     }
 private:
  
-    
+    RBTree ins(T x) 
+    {
+        assert1();
+        if (isEmpty())
+            return RBTree(R, RBTree(), x, RBTree());
+        T y = root();
+        Color c = rootColor();
+        if (rootColor() == B)
+        {
+            if (x < y)
+                return balance(left().ins(x), y, right());
+            else if (y < x)
+                return balance(left(), y, right().ins(x));
+            else
+	    {
+	        if(active == false)
+		   active = true;
+                return *this; // no duplicates
+	    }
+        }
+        else
+        {
+            if (x < y)
+                return RBTree(c, left().ins(x), y, right());
+            else if (y < x)
+                return RBTree(c, left(), y, right().ins(x));
+            else
+            {
+	        if(active == false)
+		   active = true;
+                return *this; // no duplicates
+	    }
+        }
+    }
 	
     // Called only when parent is black
     
@@ -247,18 +225,11 @@ private:
     RBTree paint(Color c) const
     {
         assert(!isEmpty());
-        return RBTree(c, left(), root(), right(),getactive());
+        return RBTree(c, left(), root(), right());
     }
 private:
-    std::shared_ptr<Node> _root;
+    std::shared_ptr<const Node> _root;
 };
-
-
-
-
-
-
-
 
 template<class T, class F>
 void forEach(RBTree<T> const & t, F f) {
