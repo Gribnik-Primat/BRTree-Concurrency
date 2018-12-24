@@ -106,7 +106,7 @@ int main()
     fl10.join();
     fl11.join();
     fl12.join();*/
-
+    usleep(1000);
     rd1.join();
     rd2.join();
     rd3.join();
